@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "asa-elo-project"
+version = "0.1.0"
+description = "ASA ELO simulator and reverse-engineering toolkit for circuit standings"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{name = "Jayadev Ghanta (project idea)"}]
+dependencies = ["numpy>=1.24"]
+optional-dependencies.dev = ["pytest>=7", "ruff>=0.5"]
+
+[project.scripts]
+asa-elo = "asa_elo_project.cli.main:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100

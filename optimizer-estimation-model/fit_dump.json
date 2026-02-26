@@ -1,0 +1,170 @@
+{
+  "rmse_0207": 0.3974249591657604,
+  "rmse_0220": 0.11163691893281898,
+  "orders_0207": 36,
+  "orders_0220": 864,
+  "scores_by_comp": {
+    "steel_city_sapna": [
+      1.0,
+      0.82,
+      0.6,
+      0.53,
+      0.43,
+      0.3,
+      0.14,
+      -0.06
+    ],
+    "buckeye_laya": [
+      0.105046,
+      -0.105265,
+      0.161161,
+      0.41304,
+      -0.262462,
+      1.0,
+      0.570758,
+      0.537466
+    ],
+    "gathe_raho": [
+      -0.1,
+      1.0,
+      0.58,
+      0.57,
+      -0.31,
+      -0.45,
+      -0.53,
+      0.21
+    ],
+    "spartan_sitara": [
+      0.74,
+      0.63,
+      0.5,
+      0.35,
+      1.0,
+      0.17,
+      -0.03,
+      0.84
+    ],
+    "davis_dhwani": [
+      0.551273,
+      1.0,
+      -0.137193,
+      0.930039,
+      0.62303,
+      -0.298526,
+      -0.888837,
+      -1.334519
+    ],
+    "jeena": [
+      1.0,
+      0.416472,
+      0.330436,
+      -0.008563,
+      -0.244837,
+      0.317704,
+      -0.929837
+    ],
+    "awaazein": [
+      0.45,
+      0.72,
+      0.57,
+      0.945,
+      0.49,
+      0.68,
+      0.05,
+      -0.45,
+      1.0
+    ],
+    "boston_bandish": [
+      0.27,
+      0.66,
+      0.455,
+      1.0,
+      0.575,
+      -0.22,
+      0.225,
+      -0.195
+    ]
+  },
+  "s_actual_by_comp": {
+    "steel_city_sapna": {
+      "Dhamakapella": 0.25,
+      "Penn State Fanaa": 0.2075471698113207,
+      "TAMU Swaram": 0.15566037735849053,
+      "Cornell Tarana": 0.13915094339622644,
+      "RP Iraaga": 0.11556603773584904,
+      "STL Acapella": 0.08490566037735849,
+      "Drexel Dhvani": 0.04716981132075472,
+      "Mystery S": 0.0
+    },
+    "buckeye_laya": {
+      "CMU Saans": 0.08131715433770556,
+      "USC Slibaat": 0.034782406669852904,
+      "Penn State Fanaa": 0.09373351565680704,
+      "Sargam": 0.14946586302727774,
+      "Raaga at UCR": 0.0,
+      "UTD Dhunki": 0.27934036075265967,
+      "Hum A Cappella": 0.18436354946630557,
+      "UGA Kalakaar": 0.17699715008939162
+    },
+    "gathe_raho": {
+      "VT Swara": 0.08253358925143955,
+      "UCD Jhankaar": 0.29366602687140114,
+      "MN Fitoor": 0.2130518234165067,
+      "Illini Awaaz": 0.21113243761996164,
+      "Duke Deewana": 0.04222648752399233,
+      "UC Junoon": 0.015355086372360847,
+      "Astha Acappella": 0.0,
+      "Purdue Taal": 0.1420345489443378
+    },
+    "spartan_sitara": {
+      "Wisconsin Waale": 0.1734234234234234,
+      "Astha Acappella": 0.14864864864864863,
+      "UC Junoon": 0.11936936936936937,
+      "OSU Dhadkan": 0.08558558558558559,
+      "Dhamakapella": 0.23198198198198197,
+      "Duke Deewana": 0.04504504504504504,
+      "Gator Awaaz": 0.0,
+      "Humraah at IU": 0.19594594594594592
+    },
+    "davis_dhwani": {
+      "UW Awaaz": 0.16956397380586055,
+      "TAMU Swaram": 0.20991197256393274,
+      "Hum A Cappella": 0.10765946323935821,
+      "UMD Anokha": 0.20362131846664533,
+      "Stanford Raagapella": 0.17601611808708945,
+      "UC Berkeley Dilse": 0.09315295107575751,
+      "UCSC Taza Taal": 0.040074202761356266,
+      "UCLA Naya Zamaana": 0.0
+    },
+    "jeena": {
+      "TAMU Swaram": 0.26113340930747253,
+      "UW Awaaz": 0.18217406918373627,
+      "UTD Dhunki": 0.17053221860092657,
+      "Illini Awaaz": 0.12466100532134708,
+      "UGA Kalakaar": 0.09268989317523642,
+      "Wisconsin Waale": 0.16880940441128117,
+      "Drexel Dhvani": 0.0
+    },
+    "awaazein": {
+      "GT Taal Tadka": 0.10582010582010584,
+      "Stanford Raagapella": 0.1375661375661376,
+      "UCSB Ravaani": 0.11992945326278662,
+      "MN Fitoor": 0.16402116402116404,
+      "BU Suno": 0.11052322163433276,
+      "Rice Basmati Beats": 0.13286302175191067,
+      "UCLA Naya Zamaana": 0.05878894767783657,
+      "Emory Suri": 0.0,
+      "UMD Anokha": 0.17048794826572605
+    },
+    "boston_bandish": {
+      "Humraah at IU": 0.10816777041942605,
+      "JHU Kranti": 0.19426048565121412,
+      "OSU Dhadkan": 0.1490066225165563,
+      "Purdue Taal": 0.2693156732891832,
+      "Rutgers RAAG": 0.17549668874172183,
+      "UCSC Taza Taal": 0.0,
+      "UCSD Sitaare": 0.09823399558498896,
+      "UMiami Tufaan": 0.005518763796909491
+    }
+  }
+}

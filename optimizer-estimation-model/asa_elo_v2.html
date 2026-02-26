@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ASA ELO Simulator — 02/20 Extended</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&family=Unbounded:wght@400;700;900&display=swap');
+
+:root {
+  --bg:      #080810;
+  --s1:      #0d0d18;
+  --s2:      #121220;
+  --s3:      #1a1a2e;
+  --border:  #1e1e32;
+  --border2: #2a2a42;
+  --text:    #c8c8e0;
+  --muted:   #505068;
+  --accent:  #f0b429;  /* amber */
+  --green:   #3dfaac;
+  --red:     #ff5f7e;
+  --blue:    #5b8fff;
+  --purple:  #9b6dff;
+}
+
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Mono', monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+/* ── BACKGROUND GRID ── */
+body::before {
+  content:'';
+  position:fixed; inset:0; z-index:0; pointer-events:none;
+  background-image:
+    linear-gradient(rgba(240,180,41,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(240,180,41,0.025) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+.wrap { position:relative; z-index:1; max-width:1280px; margin:0 auto; padding:32px 24px; }
+
+/* ── HEADER ── */
+.header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 32px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--border2);
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.title-block {}
+.title {
+  font-family: 'Unbounded', sans-serif;
+  font-size: clamp(20px, 3.5vw, 36px);
+  font-weight: 900;
+  letter-spacing: -1px;
+  line-height: 1;
+  margin-bottom: 6px;
+  color: #fff;
+}
+.title em { color: var(--accent); font-style:normal; }
+.tagline { font-size: 11px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; }
+.header-meta {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.badge {
+  font-size: 10px;
+  font-family: 'DM Mono', monospace;
+  padding: 4px 10px;
+  border-radius: 3px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+.badge-amber { background: rgba(240,180,41,0.12); color: var(--accent); border: 1px solid rgba(240,180,41,0.2); }
+.badge-green { background: rgba(61,250,172,0.10); color: var(--green); border: 1px solid rgba(61,250,172,0.2); }
+.badge-muted { background: var(--s2); color: var(--muted); border: 1px solid var(--border); }
+
+/* ── SECTION LABELS ── */
+.section-label {
+  font-size: 9px;
+  font-family: 'Unbounded', sans-serif;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.section-label::after { content:''; flex:1; height:1px; background:var(--border); }
+
+/* ── CHECKPOINT TOGGLE ── */
+.checkpoint-bar {
+  display: flex;
+  gap: 0;
+  margin-bottom: 24px;
+  border: 1px solid var(--border2);
+  border-radius: 6px;
+  overflow: hidden;
+  width: fit-content;
+}
+.cp-btn {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 10px 24px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.18s;
+  position: relative;
+}
+.cp-btn.active { background: var(--accent); color: #000; }
+.cp-btn:not(.active):hover { color: var(--text); background: var(--s2); }
+
+/* ── MAIN GRID ── */
+.main-grid {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 16px;
+  align-items: start;
+}
+@media (max-width: 960px) { .main-grid { grid-template-columns: 1fr; } }
+
+/* ── PANELS ── */
+.panel {
+  background: var(--s1);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.panel-header {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.panel-title {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #fff;
+}
+.panel-sub { font-size: 10px; color: var(--muted); }
+.panel-body { padding: 0; }
+
+/* ── COMP STEPPER ── */
+.stepper-nav {
+  display: flex;
+  gap: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  border-bottom: 1px solid var(--border);
+}
+.stepper-nav::-webkit-scrollbar { display: none; }
+.step-tab {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  padding: 10px 14px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  white-space: nowrap;
+  border-bottom: 2px solid transparent;
+  transition: all 0.15s;
+  position: relative;
+}
+.step-tab:hover:not(.active) { color: var(--text); background: var(--s2); }
+.step-tab.active { color: var(--accent); border-bottom-color: var(--accent); background: rgba(240,180,41,0.05); }
+.step-tab .dot {
+  display: inline-block;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  margin-right: 6px;
+  background: var(--border2);
+  vertical-align: middle;
+  transition: background 0.15s;
+}
+.step-tab.active .dot { background: var(--accent); }
+.step-tab.future .dot { background: var(--border); }
+.step-tab.future { opacity: 0.4; }
+
+/* ── COMP DETAIL ── */
+.comp-detail { padding: 16px 18px; }
+.comp-info {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+.comp-info-name {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+}
+.comp-info-date { font-size: 10px; color: var(--muted); }
+.comp-info-loc { font-size: 10px; color: var(--muted); }
+
+/* ── SCORE TABLE ── */
+.score-table { width: 100%; border-collapse: collapse; }
+.score-table th {
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 6px 8px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  background: var(--s2);
+}
+.score-table th:not(:first-child) { text-align: right; }
+.score-table td {
+  padding: 9px 8px;
+  border-bottom: 1px solid rgba(30,30,50,0.6);
+  vertical-align: middle;
+  font-size: 11px;
+}
+.score-table td:not(:first-child) { text-align: right; }
+.score-table tr:last-child td { border-bottom: none; }
+.score-table tr:hover td { background: rgba(240,180,41,0.03); }
+.score-table tr.uw-highlight td { background: rgba(155,109,255,0.07); }
+.score-table tr.uw-highlight .team-name { color: var(--purple); }
+
+.place-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 18px; height: 18px; border-radius: 50%;
+  font-size: 8px; font-weight: 700; margin-right: 6px;
+  flex-shrink: 0;
+}
+.p1 { background: rgba(240,180,41,0.15); color: var(--accent); border: 1px solid rgba(240,180,41,0.3); }
+.p2 { background: rgba(200,200,220,0.08); color: #9090b0; border: 1px solid rgba(200,200,220,0.15); }
+.p3 { background: rgba(255,140,80,0.12); color: #ff9a5c; border: 1px solid rgba(255,140,80,0.25); }
+.px { background: rgba(255,255,255,0.03); color: var(--muted); border: 1px solid var(--border); }
+
+.bar-cell { width: 90px; }
+.bar-wrap { position: relative; height: 4px; background: var(--s3); border-radius: 2px; }
+.bar-fill { position: absolute; top:0; left:0; height:100%; border-radius: 2px; transition: width 0.4s ease; }
+
+.delta-pos { color: var(--green); }
+.delta-neg { color: var(--red); }
+.delta-zero { color: var(--muted); }
+
+/* ── RIGHT SIDEBAR: LIVE STANDINGS ── */
+.standings-list { max-height: 580px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--border2) transparent; }
+.standings-list::-webkit-scrollbar { width: 4px; }
+.standings-list::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+.standings-row {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px;
+  gap: 10px;
+  border-bottom: 1px solid rgba(30,30,50,0.5);
+  transition: background 0.12s;
+}
+.standings-row:last-child { border-bottom: none; }
+.standings-row:hover { background: var(--s2); }
+.standings-row.uw-row { background: rgba(155,109,255,0.08); }
+.standings-row.uw-row .s-name { color: var(--purple); }
+
+.s-rank {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  width: 22px;
+  flex-shrink: 0;
+  color: var(--muted);
+}
+.s-rank.top3 { color: var(--accent); }
+.s-name { flex: 1; font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.s-comps { font-size: 9px; color: var(--muted); padding: 1px 5px; background: var(--s3); border-radius: 3px; flex-shrink:0; }
+.s-bar-wrap { width: 48px; height: 3px; background: var(--s3); border-radius: 2px; flex-shrink: 0; }
+.s-bar-fill { height: 100%; border-radius: 2px; transition: width 0.4s; }
+.s-rating { font-size: 11px; font-weight: 500; width: 52px; text-align: right; flex-shrink: 0; color: #fff; }
+.s-delta { font-size: 9px; width: 38px; text-align: right; flex-shrink: 0; }
+.tag-1comp { font-size: 8px; padding: 1px 5px; background: rgba(255,95,126,0.12); color: var(--red); border-radius: 3px; flex-shrink:0; }
+.tag-nats { font-size: 8px; padding: 1px 5px; background: rgba(240,180,41,0.12); color: var(--accent); border-radius: 3px; flex-shrink:0; }
+
+/* ── ERROR / ACCURACY TABLE ── */
+.accuracy-section { margin-top: 16px; }
+.accuracy-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 700px) { .accuracy-grid { grid-template-columns: 1fr; } }
+
+.err-row {
+  display: flex;
+  align-items: center;
+  padding: 7px 16px;
+  gap: 10px;
+  border-bottom: 1px solid rgba(30,30,50,0.5);
+}
+.err-row:last-child { border-bottom: none; }
+.err-team { flex: 1; font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.err-known { font-size: 10px; color: var(--muted); width: 54px; text-align: right; flex-shrink:0; }
+.err-pred { font-size: 10px; font-weight: 500; color: #fff; width: 54px; text-align: right; flex-shrink:0; }
+.err-val { font-size: 10px; font-weight: 700; width: 46px; text-align: right; flex-shrink:0; }
+.err-bar-wrap { width: 40px; height: 3px; background: var(--s3); border-radius: 2px; flex-shrink:0; }
+.err-bar-fill { height: 100%; border-radius: 2px; }
+.err-good { color: var(--green); }
+.err-ok { color: var(--accent); }
+.err-bad { color: var(--red); }
+
+.rmse-display {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.rmse-val {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 22px;
+  font-weight: 900;
+  color: var(--accent);
+}
+.rmse-label { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+
+/* ── COMP DUMP (collapsible) ── */
+.comp-dump-toggle {
+  width: 100%;
+  padding: 12px 18px;
+  background: transparent;
+  border: none;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  cursor: pointer;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: background 0.15s;
+}
+.comp-dump-toggle:hover { background: var(--s2); color: var(--text); }
+.comp-dump-body {
+  font-size: 10px;
+  color: var(--muted);
+  white-space: pre;
+  overflow-x: auto;
+  padding: 14px 18px;
+  border-top: 1px solid var(--border);
+  background: rgba(0,0,0,0.3);
+  max-height: 300px;
+  overflow-y: auto;
+  display: none;
+  font-family: 'DM Mono', monospace;
+  line-height: 1.7;
+}
+.comp-dump-body.open { display: block; }
+
+/* ── BUTTONS ── */
+.btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 10px 18px;
+  border-radius: 5px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-primary { background: var(--accent); color: #000; }
+.btn-primary:hover { background: #ffc84a; transform: translateY(-1px); }
+.btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border2); }
+.btn-ghost:hover { color: var(--text); border-color: var(--border2); background: var(--s2); }
+
+/* ── FORMULA BAR ── */
+.formula-bar {
+  padding: 8px 18px;
+  font-size: 10px;
+  color: var(--green);
+  background: rgba(61,250,172,0.04);
+  border-bottom: 1px solid var(--border);
+  font-family: 'DM Mono', monospace;
+}
+
+/* ── STATS ROW ── */
+.stats-strip {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.stats-strip::-webkit-scrollbar { display:none; }
+.stat-item {
+  padding: 12px 20px;
+  border-right: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.stat-item:last-child { border-right: none; }
+.stat-val {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 18px;
+  font-weight: 900;
+  color: #fff;
+  line-height: 1;
+  margin-bottom: 3px;
+}
+.stat-label { font-size: 8px; color: var(--muted); text-transform: uppercase; letter-spacing: 1.5px; }
+
+/* ── INFO BOX ── */
+.info-callout {
+  background: var(--s2);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 6px 6px 0;
+  padding: 10px 14px;
+  font-size: 10px;
+  color: #9090b0;
+  line-height: 1.8;
+  margin-bottom: 14px;
+}
+.info-callout strong { color: var(--text); }
+.info-callout .hl { color: var(--accent); }
+.info-callout .gd { color: var(--green); }
+.info-callout .bd { color: var(--red); }
+
+.mt16 { margin-top: 16px; }
+.mb16 { margin-bottom: 16px; }
+.gap16 { gap: 16px; }
+
+@keyframes fadeUp { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+.anim { animation: fadeUp 0.2s ease; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="title-block">
+      <div class="title">ASA <em>ELO</em> Simulator</div>
+      <div class="tagline">Extended through 02/20 · Joint constrained fit · 8 competitions</div>
+    </div>
+    <div class="header-meta">
+      <span class="badge badge-amber">02/20 extended</span>
+      <span class="badge badge-green" id="permBadge">calculating...</span>
+      <span class="badge badge-muted">joint fit</span>
+    </div>
+  </div>
+
+  <!-- CHECKPOINT TOGGLE -->
+  <div class="section-label">Checkpoint</div>
+  <div class="checkpoint-bar mb16">
+    <button class="cp-btn" id="cpBtn07" onclick="setCheckpoint('0207')">02/07 · 5 comps</button>
+    <button class="cp-btn active" id="cpBtn20" onclick="setCheckpoint('0220')">02/20 · 8 comps</button>
+  </div>
+
+  <!-- STATS STRIP -->
+  <div class="panel mb16">
+    <div class="stats-strip" id="statsStrip">
+      <div class="stat-item"><div class="stat-val" id="sPerms">—</div><div class="stat-label">Permutations</div></div>
+      <div class="stat-item"><div class="stat-val" id="sTeams">—</div><div class="stat-label">Teams tracked</div></div>
+      <div class="stat-item"><div class="stat-val" id="sComps">8</div><div class="stat-label">Competitions</div></div>
+      <div class="stat-item"><div class="stat-val" id="sRmse" style="color:var(--accent)">—</div><div class="stat-label">RMSE vs known</div></div>
+      <div class="stat-item"><div class="stat-val" id="sOnecomp" style="color:var(--red)">—</div><div class="stat-label">1-comp teams</div></div>
+    </div>
+    <div style="padding:12px 18px;border-top:1px solid var(--border);display:flex;gap:10px;align-items:center;">
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="runAll()">▶ Run</button>
+        <button class="btn btn-ghost" onclick="downloadData()">↓ JSON</button>
+      </div>
+      <div style="font-size:10px;color:var(--muted);margin-left:4px" id="runStatus">Initializing…</div>
+    </div>
+  </div>
+
+  <!-- MAIN GRID -->
+  <div class="main-grid">
+
+    <!-- LEFT: COMP STEPPER + ERROR TABLE -->
+    <div>
+      <!-- COMP STEPPER -->
+      <div class="panel mb16">
+        <div class="panel-header">
+          <div>
+            <div class="panel-title">Competition Breakdown</div>
+            <div class="panel-sub" id="stepSubtitle">Click a comp to inspect results</div>
+          </div>
+        </div>
+        <div class="stepper-nav" id="stepperNav"></div>
+        <div class="formula-bar">
+          R' = R + K(N−1)(S<sub>actual</sub> − S<sub>expected</sub>) &nbsp;·&nbsp;
+          K = <strong>20</strong> (first comp), <strong>16</strong> (2nd+)
+        </div>
+        <div class="comp-detail" id="compDetail">
+          <div style="color:var(--muted);font-size:11px;padding:20px 0">Select a competition above to see the score breakdown.</div>
+        </div>
+      </div>
+
+      <!-- ERROR TABLE -->
+      <div class="panel">
+        <div class="panel-header">
+          <div>
+            <div class="panel-title">Accuracy vs Official Leaderboard</div>
+            <div class="panel-sub" id="errSubtitle">Known targets for active checkpoint</div>
+          </div>
+        </div>
+        <div class="rmse-display">
+          <div>
+            <div class="rmse-val" id="rmseVal">—</div>
+            <div class="rmse-label">RMSE (rating points)</div>
+          </div>
+          <div style="font-size:10px;color:var(--muted);max-width:280px" id="rmseNote">Run the simulation to compute.</div>
+        </div>
+        <div id="errTable"></div>
+        <!-- COMP DUMP -->
+        <button class="comp-dump-toggle" onclick="toggleDump()">
+          <span>Raw z-scores & S_actual (all comps)</span>
+          <span id="dumpArrow">▶</span>
+        </button>
+        <div class="comp-dump-body" id="compDump"></div>
+      </div>
+    </div>
+
+    <!-- RIGHT: LIVE STANDINGS -->
+    <div>
+      <div class="panel" style="position:sticky;top:20px">
+        <div class="panel-header">
+          <div>
+            <div class="panel-title" id="standingsTitle">Full Standings</div>
+            <div class="panel-sub" id="standingsSub">02/20 · all teams</div>
+          </div>
+          <span class="badge badge-amber" id="standingsBadge">02/20</span>
+        </div>
+        <div class="standings-list" id="standingsList">
+          <div style="padding:20px;color:var(--muted);font-size:11px">Run simulation to see standings.</div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /main-grid -->
+
+</div><!-- /wrap -->
+
+<script>
+// ── CONSTANTS ─────────────────────────────────────────────────
+const D=400, K_NEW=20, K_EST=16;
+
+const KNOWN_0207={
+  "Dhamakapella":1531.39,"UCD Jhankaar":1523.56,"UTD Dhunki":1520.40,
+  "TAMU Swaram":1515.84,"MN Fitoor":1512.22,"Illini Awaaz":1512.03,
+  "UMD Anokha":1511.03,"Humraah at IU":1509.90,"UGA Kalakaar":1507.28,
+  "Stanford Raagapella":1507.10
+};
+const KNOWN_0220={
+  "Dhamakapella":1531.30,"TAMU Swaram":1527.31,"UTD Dhunki":1524.61,
+  "UCD Jhankaar":1523.66,"Purdue Taal":1522.07,"MN Fitoor":1520.45,
+  "UMD Anokha":1520.01,"Stanford Raagapella":1511.09,"UW Awaaz":1510.93,
+  "Illini Awaaz":1509.93
+};
+
+const COMPS=[
+  {key:"steel_city_sapna",name:"Steel City Sapna",loc:"Pittsburgh, PA",date:"Jan 24",dg:0,
+   teams:["Dhamakapella","Penn State Fanaa","TAMU Swaram","Cornell Tarana","RP Iraaga","STL Acapella","Drexel Dhvani","Mystery S"],
+   scores:[1,0.82,0.6,0.53,0.43,0.3,0.14,-0.06],
+   placements:{"Dhamakapella":1,"Penn State Fanaa":2,"TAMU Swaram":3}},
+  {key:"buckeye_laya",name:"Buckeye Laya",loc:"Columbus, OH",date:"Jan 31",dg:1,
+   teams:["CMU Saans","USC Slibaat","Penn State Fanaa","Sargam","Raaga at UCR","UTD Dhunki","Hum A Cappella","UGA Kalakaar"],
+   scores:[0.105046,-0.105265,0.161161,0.41304,-0.262462,1,0.570758,0.537466],
+   placements:{"UTD Dhunki":1,"Hum A Cappella":2,"UGA Kalakaar":3,"Sargam":4}},
+  {key:"gathe_raho",name:"Gathe Raho",loc:"Iowa City, IA",date:"Feb 7",dg:2,
+   teams:["VT Swara","UCD Jhankaar","MN Fitoor","Illini Awaaz","Duke Deewana","UC Junoon","Astha Acappella","Purdue Taal"],
+   scores:[-0.1,1,0.58,0.57,-0.31,-0.45,-0.53,0.21],
+   placements:{"UCD Jhankaar":1,"MN Fitoor":2,"Illini Awaaz":3,"Purdue Taal":4}},
+  {key:"spartan_sitara",name:"Spartan Sitara",loc:"East Lansing, MI",date:"Feb 7",dg:2,
+   teams:["Wisconsin Waale","Astha Acappella","UC Junoon","OSU Dhadkan","Dhamakapella","Duke Deewana","Gator Awaaz","Humraah at IU"],
+   scores:[0.74,0.63,0.5,0.35,1,0.17,-0.03,0.84],
+   placements:{"Dhamakapella":1,"Humraah at IU":2,"Wisconsin Waale":3}},
+  {key:"davis_dhwani",name:"Davis Dhwani",loc:"Davis, CA",date:"Feb 7",dg:2,
+   teams:["UW Awaaz","TAMU Swaram","Hum A Cappella","UMD Anokha","Stanford Raagapella","UC Berkeley Dilse","UCSC Taza Taal","UCLA Naya Zamaana"],
+   scores:[0.551273,1,-0.137193,0.930039,0.62303,-0.298526,-0.888837,-1.334519],
+   placements:{"TAMU Swaram":1,"UMD Anokha":2,"Stanford Raagapella":3,"UW Awaaz":4,"Hum A Cappella":5}},
+  {key:"jeena",name:"Jeena",loc:"Houston, TX",date:"Feb 14",dg:3,
+   teams:["TAMU Swaram","UW Awaaz","UTD Dhunki","Illini Awaaz","UGA Kalakaar","Wisconsin Waale","Drexel Dhvani"],
+   scores:[1,0.416472,0.330436,-0.008563,-0.244837,0.317704,-0.929837],
+   placements:{"TAMU Swaram":1,"UW Awaaz":2,"UTD Dhunki":3}},
+  {key:"awaazein",name:"Awaazein",loc:"Atlanta, GA",date:"Feb 14",dg:3,
+   teams:["GT Taal Tadka","Stanford Raagapella","UCSB Ravaani","MN Fitoor","BU Suno","Rice Basmati Beats","UCLA Naya Zamaana","Emory Suri","UMD Anokha"],
+   scores:[0.45,0.72,0.57,0.945,0.49,0.68,0.05,-0.45,1],
+   placements:{"UMD Anokha":1,"MN Fitoor":2,"Stanford Raagapella":3}},
+  {key:"boston_bandish",name:"Boston Bandish",loc:"Boston, MA",date:"Feb 14",dg:3,
+   teams:["Humraah at IU","JHU Kranti","OSU Dhadkan","Purdue Taal","Rutgers RAAG","UCSC Taza Taal","UCSD Sitaare","UMiami Tufaan"],
+   scores:[0.27,0.66,0.455,1,0.575,-0.22,0.225,-0.195],
+   placements:{"Purdue Taal":1,"JHU Kranti":2,"Rutgers RAAG":3}},
+];
+
+// ── ELO CORE ─────────────────────────────────────────────────
+function actualFromZ(scores){
+  const m=Math.min(...scores),d=scores.map(s=>s-m),s=d.reduce((a,b)=>a+b,0);
+  return s>0?d.map(x=>x/s):scores.map(()=>1/scores.length);
+}
+function expectedScores(teams,R){
+  const N=teams.length,den=N*(N-1)/2;
+  const raw=teams.map((A,i)=>{
+    const RA=R[A]??1500;let s=0;
+    teams.forEach((B,j)=>{if(i!==j)s+=1/(1+Math.pow(10,((R[B]??1500)-RA)/D));});
+    return s/den;
+  });
+  const t=raw.reduce((a,b)=>a+b,0);return raw.map(x=>x/t);
+}
+function permute(arr){
+  if(arr.length<=1)return[arr.slice()];
+  const out=[];
+  for(let i=0;i<arr.length;i++){
+    const rest=[...arr.slice(0,i),...arr.slice(i+1)];
+    permute(rest).forEach(p=>out.push([arr[i],...p]));
+  }
+  return out;
+}
+function allOrders(comps){
+  const byDg=new Map();
+  comps.forEach((c,i)=>{if(!byDg.has(c.dg))byDg.set(c.dg,[]);byDg.get(c.dg).push(i);});
+  const dgs=[...byDg.keys()].sort((a,b)=>a-b);
+  const out=[];
+  permute(dgs).forEach(dgo=>{
+    let parts=[[]];
+    dgo.forEach(dg=>{
+      const lps=permute(byDg.get(dg));const nxt=[];
+      parts.forEach(b=>lps.forEach(lp=>nxt.push(b.concat(lp))));parts=nxt;
+    });
+    out.push(...parts);
+  });
+  return out;
+}
+function runSeason(order,comps){
+  const R={},cnt={};
+  comps.forEach(c=>c.teams.forEach(t=>{R[t]=R[t]??1500;cnt[t]=cnt[t]??0;}));
+  const steps=[];
+  order.forEach(ci=>{
+    const c=comps[ci],teams=c.teams,N=teams.length;
+    const A=actualFromZ(c.scores),E=expectedScores(teams,R);
+    const before={...R},deltas={};
+    teams.forEach((t,i)=>{
+      const k=cnt[t]<=1?K_NEW:K_EST;
+      deltas[t]=k*(N-1)*(A[i]-E[i]);
+      R[t]+=deltas[t];cnt[t]++;
+    });
+    steps.push({ci,before:{...before},after:{...R},actual:A,expected:E,deltas});
+  });
+  return{R:{...R},cnt:{...cnt},steps};
+}
+function avgPerms(comps){
+  const orders=allOrders(comps),acc={},cnt2={};
+  orders.forEach(o=>{
+    const{R}=runSeason(o,comps);
+    Object.entries(R).forEach(([t,r])=>{acc[t]=(acc[t]??0)+r;cnt2[t]=(cnt2[t]??0)+1;});
+  });
+  const avg={};Object.keys(acc).forEach(t=>avg[t]=acc[t]/cnt2[t]);
+  return{avg,n:orders.length};
+}
+
+// ── STATE ─────────────────────────────────────────────────────
+let AVG07=null,AVG20=null,PERMS07=0,PERMS20=0;
+let activeCheckpoint='0220';
+let activeStep=null;
+let compCounts07={},compCounts20={};
+
+function getCurrentAvg(){return activeCheckpoint==='0207'?AVG07:AVG20;}
+function getCurrentKnown(){return activeCheckpoint==='0207'?KNOWN_0207:KNOWN_0220;}
+function getCurrentComps(){return activeCheckpoint==='0207'?COMPS.slice(0,5):COMPS;}
+
+// ── RUN ───────────────────────────────────────────────────────
+function runAll(){
+  document.getElementById('runStatus').textContent='Computing permutations…';
+
+  setTimeout(()=>{
+    const comps5=COMPS.slice(0,5),comps8=COMPS;
+    const r07=avgPerms(comps5),r20=avgPerms(comps8);
+    AVG07=r07.avg;AVG20=r20.avg;PERMS07=r07.n;PERMS20=r20.n;
+
+    // compute comp counts
+    comps5.forEach(c=>c.teams.forEach(t=>{compCounts07[t]=(compCounts07[t]??0)+1;}));
+    comps8.forEach(c=>c.teams.forEach(t=>{compCounts20[t]=(compCounts20[t]??0)+1;}));
+
+    window.__ASA_DEBUG__={COMPS,AVG07,AVG20,PERMS07,PERMS20};
+
+    document.getElementById('permBadge').textContent=`${PERMS20} perms`;
+    document.getElementById('sPerms').textContent=PERMS20;
+    document.getElementById('sTeams').textContent=Object.keys(AVG20).length;
+
+    const onecomp=Object.values(compCounts20).filter(v=>v<2).length;
+    document.getElementById('sOnecomp').textContent=onecomp;
+
+    document.getElementById('runStatus').textContent=`Done · ${PERMS07} orders (02/07) · ${PERMS20} orders (02/20)`;
+
+    buildStepperNav();
+    renderStandings();
+    renderErrors();
+    renderCompDump();
+  },20);
+}
+
+// ── CHECKPOINT SWITCH ────────────────────────────────────────
+function setCheckpoint(cp){
+  activeCheckpoint=cp;
+  document.getElementById('cpBtn07').classList.toggle('active',cp==='0207');
+  document.getElementById('cpBtn20').classList.toggle('active',cp==='0220');
+  if(AVG07)renderAll();
+}
+function renderAll(){renderStandings();renderErrors();buildStepperNav();if(activeStep!==null)renderCompStep(activeStep);}
+
+// ── STEPPER ───────────────────────────────────────────────────
+function buildStepperNav(){
+  const nav=document.getElementById('stepperNav');
+  nav.innerHTML='';
+  const comps=getCurrentComps();
+  comps.forEach((c,i)=>{
+    const btn=document.createElement('button');
+    btn.className='step-tab';
+    if(activeCheckpoint==='0207'&&i>=5){btn.classList.add('future');}
+    btn.innerHTML=`<span class="dot"></span>${c.name.split(' ')[0]}`;
+    btn.onclick=()=>selectStep(i);
+    if(i===activeStep)btn.classList.add('active');
+    nav.appendChild(btn);
+  });
+}
+function selectStep(i){
+  activeStep=i;
+  document.querySelectorAll('.step-tab').forEach((b,idx)=>b.classList.toggle('active',idx===i));
+  renderCompStep(i);
+}
+function renderCompStep(i){
+  const comps=getCurrentComps();
+  if(i>=comps.length){document.getElementById('compDetail').innerHTML='<div style="color:var(--muted);padding:20px 0;font-size:11px">No data for this comp in the current checkpoint.</div>';return;}
+  const c=comps[i];
+  const avg=getCurrentAvg();
+  if(!avg){return;}
+
+  // Use canonical ordering to get step data for display
+  const order=comps.map((_,idx)=>idx);
+  const{steps}=runSeason(order,comps);
+  // find the step for this comp index
+  const step=steps.find(s=>s.ci===i);
+  if(!step){return;}
+
+  const teams=c.teams;
+  const A=actualFromZ(c.scores);
+  const E=step.expected;
+  const maxA=Math.max(...A);
+
+  const sorted=teams.map((t,idx)=>({
+    t,s:c.scores[idx],a:A[idx],e:E[idx],d:step.deltas[t],
+    before:step.before[t]??1500,after:step.after[t]??1500,
+    p:c.placements[t]??'?'
+  })).sort((a,b)=>b.s-a.s);
+
+  const pbadge=p=>{
+    const cl=p===1?'p1':p===2?'p2':p===3?'p3':'px';
+    return`<span class="place-badge ${cl}">${p==='?'?'?':p}</span>`;
+  };
+
+  let rows='';
+  let hasUnplaced=false;
+  sorted.forEach(x=>{
+    const bw=Math.round((x.a/maxA)*100);
+    const uw=x.t==='UW Awaaz';
+    const dc=x.d>0.05?'delta-pos':x.d<-0.05?'delta-neg':'delta-zero';
+    const isUnplaced=x.p==='?';
+    if(isUnplaced) hasUnplaced=true;
+    const dimStyle=isUnplaced?'opacity:0.45;':'';
+    rows+=`<tr${uw?' class="uw-highlight"':''} style="${dimStyle}">
+      <td style="display:flex;align-items:center;gap:4px">${pbadge(x.p)}<span class="team-name">${x.t}</span>${isUnplaced?'<span style="font-size:8px;padding:1px 5px;background:rgba(255,95,126,0.12);color:var(--red);border-radius:3px;margin-left:2px">guess</span>':''}</td>
+      <td>${x.s.toFixed(4)}</td>
+      <td>
+        <div>${(x.a*100).toFixed(1)}%</div>
+        <div class="bar-wrap bar-cell" style="margin-top:3px"><div class="bar-fill" style="width:${bw}%;background:${isUnplaced?'rgba(255,95,126,0.4)':'var(--accent)'}"></div></div>
+      </td>
+      <td>${(x.e*100).toFixed(1)}%</td>
+      <td class="${dc}">${x.d>=0?'+':''}${x.d.toFixed(1)}</td>
+      <td>${x.before.toFixed(1)}</td>
+      <td style="font-weight:600;color:${x.d>=0?'var(--green)':'var(--red)'}">${x.after.toFixed(1)}</td>
+    </tr>`;
+  });
+
+  const guessNotice=hasUnplaced?`
+    <div style="padding:9px 14px;background:rgba(255,95,126,0.07);border-top:1px dashed rgba(255,95,126,0.3);display:flex;align-items:center;gap:8px">
+      <span style="font-size:9px;color:var(--red);letter-spacing:1px;text-transform:uppercase;font-family:'Unbounded',sans-serif;font-weight:700;flex-shrink:0">⚠ Guessed</span>
+      <span style="font-size:9px;color:#805060;line-height:1.4">Rows marked <b style="color:var(--red)">guess</b> have no real placement data — z-scores are synthetic estimates seeded by the model. Their rating deltas are not reliable.</span>
+    </div>`:'';
+
+  document.getElementById('stepSubtitle').textContent=`${c.name} · ${c.loc} · ${c.date} · ${teams.length} teams`;
+  document.getElementById('compDetail').innerHTML=`
+    <table class="score-table anim">
+      <thead><tr>
+        <th>Team</th><th>Z-score</th><th>Actual%</th>
+        <th>Expected%</th><th>Δ Rating</th><th>Before</th><th>After</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>${guessNotice}`;
+}
+
+// ── STANDINGS ────────────────────────────────────────────────
+function renderStandings(){
+  const avg=getCurrentAvg();if(!avg)return;
+  const cp=activeCheckpoint;
+  const known=getCurrentKnown();
+  const counts=cp==='0207'?compCounts07:compCounts20;
+  const sorted=Object.entries(avg).sort((a,b)=>b[1]-a[1]);
+  const maxR=sorted[0][1],minR=sorted[sorted.length-1][1];
+  const NATS=8;
+
+  // canonical run for delta display
+  const comps=getCurrentComps();
+  const order=comps.map((_,i)=>i);
+  const{R:canonR,cnt:canonCnt}=runSeason(order,comps);
+
+  const knownCount=Object.keys(known).length;
+  let html='';
+  sorted.forEach(([t,r],i)=>{
+    const rank=i+1;
+    if(rank===knownCount+1){
+      html+=`<div style="padding:7px 16px;background:rgba(255,95,126,0.07);border-top:1px dashed rgba(255,95,126,0.3);border-bottom:1px dashed rgba(255,95,126,0.3);display:flex;align-items:center;gap:8px">
+        <span style="font-size:9px;color:var(--red);letter-spacing:1px;text-transform:uppercase;font-family:'Unbounded',sans-serif;font-weight:700;flex-shrink:0">⚠ Estimated</span>
+        <span style="font-size:9px;color:#805060;line-height:1.4">Rankings below are model estimates only — z-scores for unplaced teams are synthetic guesses, not real judging data. Order is unreliable.</span>
+      </div>`;
+    }
+    const uw=t==='UW Awaaz';
+    const rc=rank<=3?'top3':'';
+    const bp=maxR>minR?((r-minR)/(maxR-minR))*100:50;
+    const nc=counts[t]??0;
+    const onecomp=nc<2?'<span class="tag-1comp">1c</span>':'';
+    const nats=rank<=NATS&&nc>=2?'<span class="tag-nats">♦</span>':'';
+    const kn=known[t]?`<span style="font-size:9px;color:var(--muted)">${known[t].toFixed(2)}</span>`:'';
+    const isEst=rank>knownCount;
+    html+=`<div class="standings-row${uw?' uw-row':''}">
+      <div class="s-rank ${rc}" style="${isEst?'color:rgba(255,95,126,0.5)':''}">${rank}</div>
+      <div class="s-name" style="${isEst?'color:var(--muted)':''}">${t}</div>
+      ${kn}
+      <div class="s-comps">${nc}c</div>
+      <div class="s-bar-wrap"><div class="s-bar-fill" style="width:${bp}%;background:${isEst?'rgba(255,95,126,0.35)':uw?'var(--purple)':'var(--accent)'}"></div></div>
+      <div class="s-rating" style="${isEst?'color:var(--muted)':''}">${r.toFixed(2)}</div>
+      ${isEst?'<span style="font-size:8px;padding:1px 5px;background:rgba(255,95,126,0.12);color:var(--red);border-radius:3px;flex-shrink:0">est.</span>':''}
+      ${onecomp}${nats}
+    </div>`;
+  });
+
+  document.getElementById('standingsTitle').textContent=`Full Standings`;
+  document.getElementById('standingsSub').textContent=`${cp==='0207'?'02/07 · 5 comps':'02/20 · 8 comps'} · ${sorted.length} teams`;
+  document.getElementById('standingsBadge').textContent=cp==='0207'?'02/07':'02/20';
+  document.getElementById('standingsList').innerHTML=html;
+
+  // Update onecomp count for this checkpoint
+  const onecomp=Object.values(counts).filter(v=>v<2).length;
+  document.getElementById('sOnecomp').textContent=onecomp;
+  const rmse=computeRMSE(avg,known);
+  document.getElementById('sRmse').textContent=rmse.toFixed(2);
+}
+
+// ── ERRORS ───────────────────────────────────────────────────
+function computeRMSE(pred,known){
+  const entries=Object.entries(known);
+  return Math.sqrt(entries.reduce((s,[t,k])=>{const p=pred[t]??1500;return s+(p-k)**2;},0)/entries.length);
+}
+function renderErrors(){
+  const avg=getCurrentAvg();if(!avg)return;
+  const known=getCurrentKnown();
+  const cp=activeCheckpoint;
+
+  const rows=Object.entries(known).map(([t,k])=>({t,k,p:avg[t]??1500,e:(avg[t]??1500)-k}))
+    .sort((a,b)=>Math.abs(b.e)-Math.abs(a.e));
+  const rmse=computeRMSE(avg,known);
+  const maxErr=Math.max(...rows.map(r=>Math.abs(r.e)));
+
+  document.getElementById('rmseVal').textContent=rmse.toFixed(3);
+  document.getElementById('rmseVal').style.color=rmse<2?'var(--green)':rmse<5?'var(--accent)':'var(--red)';
+  document.getElementById('rmseNote').textContent=rmse<2?'Excellent fit — errors within noise margin.':rmse<5?'Good fit — small systematic offset.':'Moderate fit — seeded z-scores can be refined.';
+  document.getElementById('errSubtitle').textContent=`vs official ${cp==='0207'?'02/07':'02/20'} top-10`;
+
+  let html='';
+  rows.forEach(r=>{
+    const cls=Math.abs(r.e)<1?'err-good':Math.abs(r.e)<5?'err-ok':'err-bad';
+    const bw=maxErr>0?Math.round((Math.abs(r.e)/maxErr)*100):0;
+    const sign=r.e>=0?'+':'';
+    html+=`<div class="err-row">
+      <div class="err-team">${r.t}</div>
+      <div class="err-known">${r.k.toFixed(2)}</div>
+      <div class="err-pred">${r.p.toFixed(2)}</div>
+      <div class="err-val ${cls}">${sign}${r.e.toFixed(2)}</div>
+      <div class="err-bar-wrap"><div class="err-bar-fill" style="width:${bw}%;background:${Math.abs(r.e)<1?'var(--green)':Math.abs(r.e)<5?'var(--accent)':'var(--red)'}"></div></div>
+    </div>`;
+  });
+  document.getElementById('errTable').innerHTML=html;
+}
+
+// ── COMP DUMP ────────────────────────────────────────────────
+function renderCompDump(){
+  const dump=COMPS.map(c=>{
+    const A=actualFromZ(c.scores);
+    const lines=c.teams.map((t,i)=>({t,z:c.scores[i],a:A[i],p:c.placements[t]||null})).sort((a,b)=>b.z-a.z);
+    return[`${c.name}  [${c.date}]  dg:${c.dg}`,...lines.map(x=>`  ${x.p?('#'+x.p).padEnd(3):'   '} ${x.t.padEnd(24)} z=${x.z.toFixed(4).padStart(8)}  S_actual=${x.a.toFixed(4)}`)].join('\n');
+  }).join('\n\n');
+  document.getElementById('compDump').textContent=dump;
+}
+function toggleDump(){
+  const el=document.getElementById('compDump');
+  const open=el.classList.toggle('open');
+  document.getElementById('dumpArrow').textContent=open?'▼':'▶';
+}
+
+// ── DOWNLOAD ─────────────────────────────────────────────────
+function downloadData(){
+  const data=window.__ASA_DEBUG__||{COMPS};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='asa_elo_snapshot.json';a.click();URL.revokeObjectURL(a.href);
+}
+
+// ── INIT ─────────────────────────────────────────────────────
+runAll();
+</script>
+</body>
+</html>

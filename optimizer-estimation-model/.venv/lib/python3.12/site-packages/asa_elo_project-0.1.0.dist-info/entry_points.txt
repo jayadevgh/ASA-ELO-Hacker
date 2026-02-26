@@ -1,0 +1,2 @@
+[console_scripts]
+asa-elo = asa_elo_project.cli.main:main
